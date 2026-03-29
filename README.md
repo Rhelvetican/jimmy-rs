@@ -15,7 +15,7 @@ This means you can’t accidentally write a value where a field name is expected
 Add this to your `Cargo.toml` dependencies section:
 
 ```toml
-jimmy-rs = "1.0.1"
+jimmy-rs = "2.0.0"
 ```
 
 ## Disclaimer
