@@ -3,10 +3,10 @@
 
     authors     = ["Rhelvetican", "xeondev"]
     description = "A type-safe JSON builder using the typestate pattern that ensures syntactically correct JSON at compile time."
-    homepage    = "https://www.github.com/Rhelvetican"
+    homepage    = "https://www.github.com/Rhelvetican/jimmy-rs"
     keywords    = ["json"]
 
     edition = "2024"
-    version = "1.0.1"
+    version = "2.0.0"
 
     license = "MIT"
