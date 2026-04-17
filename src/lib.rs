@@ -2,8 +2,6 @@
 
 use std::io::Error;
 
-pub type JimmyResult<T> = ::std::io::Result<T>;
-
 mod jimmy;
 mod state;
 
