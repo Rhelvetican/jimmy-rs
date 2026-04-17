@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{Array, Error, Field, JimmyResult, Object, Root};
 use std::{io::Write, marker::PhantomData};
 
 macro_rules! ret {
@@ -14,6 +14,9 @@ macro_rules! ret {
 macro_rules! implstates {
     ($next:ty) => {
         /// Write a JSON number.
+        ///
+        /// # Errors
+        /// - This function will error in case of failure to write to buffer.
         pub fn number(mut self, value: f64) -> Result<Jimmy<W, $next>, Error> {
             self.comma()?;
             write!(self.sink, "{value}")?;
@@ -21,6 +24,9 @@ macro_rules! implstates {
         }
 
         /// Write a JSON string.
+        ///
+        /// # Errors
+        /// - This function will error in case of failure to write to buffer.
         pub fn string(mut self, value: &str) -> Result<Jimmy<W, $next>, Error> {
             self.comma()?;
             write!(self.sink, "\"{value}\"")?;
@@ -28,6 +34,9 @@ macro_rules! implstates {
         }
 
         /// Write a JSON boolean.
+        ///
+        /// # Errors
+        /// - This function will error in case of failure to write to buffer.
         pub fn boolean(mut self, boolean: bool) -> Result<Jimmy<W, $next>, Error> {
             self.comma()?;
             write!(self.sink, "{boolean}")?;
@@ -35,6 +44,9 @@ macro_rules! implstates {
         }
 
         /// Write a JSON null.
+        ///
+        /// # Errors
+        /// - This function will error in case of failure to write to buffer.
         pub fn null(mut self) -> Result<Jimmy<W, $next>, Error> {
             self.comma()?;
             write!(self.sink, "null")?;
@@ -42,6 +54,9 @@ macro_rules! implstates {
         }
 
         /// Start a JSON array.
+        ///
+        /// # Errors
+        /// - This function will error in case of failure to write to buffer.
         pub fn array(mut self) -> Result<Jimmy<W, Array<$next>>, Error> {
             self.comma()?;
             write!(self.sink, "[")?;
@@ -49,6 +64,9 @@ macro_rules! implstates {
         }
 
         /// Start a JSON object.
+        ///
+        /// # Errors
+        /// - This function will error in case of failure to write to buffer.
         pub fn object(mut self) -> Result<Jimmy<W, Object<$next>>, Error> {
             self.comma()?;
             write!(self.sink, "{{")?;
@@ -72,6 +90,9 @@ impl<W: Write, State> Jimmy<W, State> {
     /// Write a comma if the previous element requires one.
     ///
     /// This is used internally to insert separators between JSON elements.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     fn comma(&mut self) -> Result<(), Error> { if self.reentrant { write!(self.sink, ",") } else { Ok(()) } }
 }
 
@@ -85,6 +106,9 @@ impl<W: Write, Prev> Jimmy<W, Array<Prev>> {
     /// Close the current array and return to the parent state.
     ///
     /// Writes the closing bracket `]`. After this, the parent state may continue.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     pub fn end_array(mut self) -> Result<Jimmy<W, Prev>, Error> {
         write!(self.sink, "]")?;
         ret!(self.sink, true)
@@ -95,9 +119,12 @@ impl<W: Write, Prev> Jimmy<W, Object<Prev>> {
     /// Add a field name inside the current object.
     ///
     /// Writes the field name and colon, and transitions to the `Field` state.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     pub fn field(mut self, field: &str) -> Result<Jimmy<W, Field<Object<Prev>>>, Error> {
         self.comma()?;
-        write!(self.sink, "\"{}\":", field)?;
+        write!(self.sink, "\"{field}\":")?;
         ret!(self.sink, false)
     }
 
@@ -105,6 +132,9 @@ impl<W: Write, Prev> Jimmy<W, Object<Prev>> {
     ///
     /// Writes the closing brace `}`. After this, the parent state may continue
     /// with more elements or close further.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     pub fn end_object(mut self) -> Result<Jimmy<W, Prev>, Error> {
         write!(self.sink, "}}")?;
         ret!(self.sink, true)
@@ -115,12 +145,18 @@ impl Jimmy<Vec<u8>, Root> {
     /// Start a new JSON object with an `Vec<u8>`. The builder is initially in the root state.
     ///
     /// The opening brace `{` is written immediately.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     #[inline]
     pub fn new() -> JimmyResult<Self> { Self::new_with_writer(Vec::new()) }
 
     /// Start a new JSON object with an `Vec<u8>` and a given capacity. The builder is initially in the root state.
     ///
     /// The opening brace `{` is written immediately.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     #[inline]
     pub fn new_with_capacity(capacity: usize) -> JimmyResult<Self> { Self::new_with_writer(Vec::with_capacity(capacity)) }
 }
@@ -129,6 +165,9 @@ impl<W: Write> Jimmy<W, Root> {
     /// Start a new JSON object using the given writer. The builder is initially in the root state.
     ///
     /// The opening brace `{` is written immediately.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     #[inline]
     pub fn new_with_writer(mut writer: W) -> JimmyResult<Self> {
         write!(&mut writer, "{{")?;
@@ -139,15 +178,21 @@ impl<W: Write> Jimmy<W, Root> {
     ///
     /// This method writes the field name followed by a colon and transitions to
     /// the `Field` state, where a value must be provided.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     pub fn field(mut self, field: &str) -> JimmyResult<Jimmy<W, Field<Root>>> {
         self.comma()?;
-        write!(self.sink, "\"{}\":", field)?;
+        write!(self.sink, "\"{field}\":")?;
         ret!(self.sink, false)
     }
 
     /// Finish the JSON object and close the root.
     ///
     /// Writes the closing brace `}` and consumes the builder.
+    ///
+    /// # Errors
+    /// - This function will error in case of failure to write to buffer.
     pub fn finish(mut self) -> JimmyResult<W> {
         write!(self.sink, "}}")?;
         self.sink.flush()?;

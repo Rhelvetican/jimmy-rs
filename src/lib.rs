@@ -46,6 +46,6 @@ mod tests {
             String::from_utf8(buf).map_err(|_| Error::other("utf8 error"))
         }
 
-        assert_eq!(inner().unwrap(), "{\"cord\":{\"inner_cord\":{\"inner\":[{\"hello\":true}]}}}")
+        assert_eq!(inner().unwrap(), "{\"cord\":{\"inner_cord\":{\"inner\":[{\"hello\":true}]}}}");
     }
 }
